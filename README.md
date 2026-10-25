@@ -1,15 +1,9 @@
 # OOP-Ex1-3D-Volume-Projection
-## Problem Definition
-### Overview
-The primary problem is to design and implement an algorithm that computes a 2D cross-sectional image (projection) from a 3D volumetric dataset along any arbitrary plane. Because the base problem statement is intentionally under-specified for direct coding, a structured software design is required prior to implementation to ensure a robust, runtime-efficient solution.
-
-# OOP-Ex1-3D-Volume-Projection
 
 ## 1. Product Overview (PRD)
-* **What are we building?** A high-performance 2D cross-sectional projection engine that slices 3D volumetric datasets (NRRD format) along any arbitrary 3D plane.
-* **For whom and why?** Designed for medical imaging and volumetric analysis workflows (such as inspecting 3D Slicer MRI scans), where interactive, real-time slicing (30–100+ FPS) is required without the overhead of full 3D volume rendering.
-
----
+- **What are we building?** A high-performance 2D cross-sectional projection engine that slices 3D volumetric datasets along a given 3D plane.
+- **Data Source:** The project utilizes the NRRD format and medical MRI volumetric datasets from the **3D Slicer** open-source project.
+- **For whom and why?** Developed as part of the OOP course (Ex1) to establish a structured software design prior to coding, and to achieve real-time projection performance (minimum 30 FPS, target 100+ FPS on a `500^3` matrix).
 
 ## 2. Software Requirements Specification (SRS)
 *Answering: Exactly what must the system do?*
@@ -37,11 +31,6 @@ The primary problem is to design and implement an algorithm that computes a 2D c
 
 # OOP-Ex1-3D-Volume-Projection
 
-
-## 1. Problem Definition
-
-### Overview
-The primary problem is to design and implement a robust, runtime-efficient algorithm that computes a 2D cross-sectional image (projection) from a 3D volumetric dataset along any arbitrary plane. Because the base problem statement is intentionally under-specified for direct coding, a structured software design is required prior to implementation.
 
 ### Inputs
 * **3D Volumetric Data Matrix (M):** A 3D raster matrix of size `sx * sy * sz` loaded from an NRRD format file (such as medical MRI data from 3D Slicer).
