@@ -29,4 +29,36 @@ class ProjectorTest {
         }
         assertTrue(foundWritten, "at least one pixel should be 255");
     }
+
+    @Test
+    void axisAlignedSliceReadsCorrectVoxels() {
+        // value of voxel (x,y,z) = x + 10*y + 100*z, so every voxel is unique
+        int s = 10;
+        short[] data = new short[s * s * s];
+        for (int z = 0; z < s; z++)
+            for (int y = 0; y < s; y++)
+                for (int x = 0; x < s; x++)
+                    data[x + s * (y + s * z)] = (short) (x + 10 * y + 100 * z);
+        Volume cube = new ShortVolume(s, s, s, data);
+
+        // a rectangle (trapezoid with a1->a2 as long as b->c) in the plane z = 3
+        // top side from (0,-1,3) to (7,-1,3), legs go in +y direction, length 5
+        PlaneDefinition plane = new TrapezoidPlane(
+                new Vec3(0, -1, 3), new Vec3(7, -1, 3),
+                new Vec3(0, 4, 3), new Vec3(7, 4, 3));
+        ProjectionImage img = new ProjectionImage(plane.width(), plane.height());
+
+        Projector.project(cube, plane, img);
+
+        // row y of the image is sampled at plane-y = y (the algorithm steps first)
+        // image width is 7; the row has 8 samples, x = 0..7 (the last one is dropped)
+        // pixel (x, row) should be voxel (x, row, 3)
+        for (int row = 0; row < img.height(); row++) {
+            for (int x = 0; x < img.width(); x++) {
+                long expected = x + 10L * row + 300;
+                assertEquals(expected, img.get(x, row),
+                        "pixel (" + x + "," + row + ")");
+            }
+        }
+    }
 }
