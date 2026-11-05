@@ -9,11 +9,11 @@ This is Ex1 of the OOP course. The goal is a clean, robust and fast design. The 
 - [x] 1. Repository, problem and scope (this README)
 - [x] 2. SRS document: [docs/SRS.md](docs/SRS.md)
 - [x] 3. Main algorithm in detail: SRS section 2.4 and Appendix A
-- [ ] 4. Data set of NRRD files: defined in SRS section 5, files still to collect and create
+- [x] 4. Data set of NRRD files: `data/MRHead.nrrd` (real MRI file) and synthetic files created in the tests (SRS section 5)
 - [x] 5. Testing strategy, including the demo: SRS section 5
-- [ ] 6. Implementation (commit frequently)
-- [ ] 7. Demo `main`
-- [ ] 8. Experiment and its results (see the Experiment section)
+- [x] 6. Implementation (commit frequently)
+- [x] 7. Demo `main`: `Ex1 file.nrrd file.csv file.mp4`
+- [x] 8. Experiment and its results (see the Experiment section)
 
 ## Problem
 
@@ -36,7 +36,7 @@ In scope:
 - Reading NRRD files: 3 dimensions, unsigned 8/16/32-bit, raw or gzip, little or big endian.
 - The projection engine for both plane types, with nearest-neighbour sampling.
 - The demo: NRRD + CSV in, MP4 out.
-- Unit tests, a reference test, a demo test and a benchmark.
+- Unit tests, a demo test and a benchmark.
 - Speed: at least 30 FPS (must) and 100+ FPS (expected) for the projection of a `500^3` byte volume.
 
 Not in scope (version 1):
@@ -78,12 +78,23 @@ The assignment's format is `python Ex0.py file.nrrd file.csv file.mp4`. This pro
 Ex1 file.nrrd file.csv file.mp4
 ```
 
-The exact build and run commands will be written here when the build is set up.
+Requirements: JDK 17 or later. The libraries (JCodec for MP4, JUnit for tests) are set in `pom.xml` and Maven downloads them.
+
+**In IntelliJ IDEA:**
+
+1. Open the project and let Maven load (right click `pom.xml`, Maven, Sync Project).
+2. Run `demo.Ex1` once, then Run, Edit Configurations.
+3. In Program arguments write: `data/MRHead.nrrd data/planes.csv results/demo.mp4`
+4. Run. The video is written to `results/demo.mp4` (create the `results` folder first).
+
+**Exit codes:** 0 success, 2 wrong number of arguments, 3 bad NRRD file, 4 bad CSV file, 5 a file cannot be read or written.
+
+**Tests:** run the test folder in IntelliJ (right click `src/test/java`, Run All Tests).
 
 ## Getting started (for every team member)
 
 1. Install a JDK, version 17 or later. Check it with `java -version` in a terminal.
-2. Install VS Code and the "Extension Pack for Java".
+2. Install an IDE for Java, for example IntelliJ IDEA (or VS Code with the "Extension Pack for Java"). The project uses Maven (`pom.xml`).
 3. Clone the repository: `git clone <repository address>`.
 4. Put the MRI file (`MRHead.nrrd`, from the assignment) in a `data/` folder. Check its size on disk: a file under about 50 MB can be committed (the assignment asks us to define a data set of NRRD files); a larger file should go into `.gitignore`, with a note here about where to download it.
 5. Look at the header of the NRRD file to see its sizes, type, encoding and endian. How to do it is explained in the SRS, Appendix B3. For our file, the team found: `sizes: 256 256 130` (8,519,680 voxels), `type: short` (signed 16-bit, about 17 MB when unpacked) and `encoding: gzip`. `endian: little` (the 16-bit numbers are stored with the least significant byte first).
@@ -121,25 +132,35 @@ Short list; the full text is in SRS section 6.
 5. CSV format: one plane per line, 9 or 12 numbers. A plane is 3 or 4 points and a line is the natural unit of a list, so the program can tell the cases apart by counting.
 6. MP4 encoder: a pure-Java library (for example JCodec) behind the `VideoWriter` interface, so nobody has to install extra programs. Fallback: a writer that calls `ffmpeg`.
 7. Video details: gray scaling by the volume's min and max (same brightness scale in every frame), a black frame sized to the largest plane (a video needs one frame size), 10 FPS.
+8. Invalid plane in the CSV: the plane constructor throws `PlaneDefinitionException`, as the instructor requires in the assignment's Q&A. The demo does not stop: `PlaneCsvReader` turns the line into an invalid entry with its line number and reason, and `DemoRunner` writes an error frame (a black frame with a white X) at that position, so the other valid planes still give correct frames. A CSV with no plane line, a bad NRRD file or a missing file still stop the program with a message and a non-zero exit code.
 
 ## Testing
 
 - Unit tests for every class.
-- A reference test: the fast `Projector` is compared with a slow implementation written directly from the algorithm.
+- A benchmark (`ProjectorBenchmark`) for the FPS requirement. The simple `Projector`, written straight from the assignment, already meets it, so there is no separate fast version to compare against.
 - An end-to-end demo test with a small synthetic volume and a CSV file.
-- A separate benchmark for the FPS requirement.
+
 
 Details and the full test list are in SRS section 5.
 
 ## Experiment
 
-*To be written after the demo works.* Plan: run the demo on `MRHead.nrrd` with a CSV of planes (for example the three axis-aligned views and a series of oblique planes), then describe the result, link the MP4 file and report the measured projection speed.
+We ran the demo on the real MRI file `data/MRHead.nrrd` (256 x 256 x 130, type short) with a CSV of five planes (`data/planes.csv`).
 
-- Command used:
-- Number of planes:
-- Result (what the video shows):
-- Measured FPS of the projection (with the machine used):
-- Output video: `results/...mp4`
+- Command used: `Ex1 data/MRHead.nrrd data/planes.csv results/demo.mp4`
+- Number of planes: 5 (4 valid, 1 invalid on purpose)
+- Output video: [results/demo.mp4](results/demo.mp4), 256 x 260, 10 frames per second, 5 frames
+- Measured FPS of the projection (with the machine used): 1100 to 1190 FPS (median) for the projection of a `500^3` byte volume, and about 630 to 660 FPS for the worst 1% of frames. Machine: Java 25, amd64, 8 cores, the engine uses one thread. Method: `ProjectorBenchmark` (`src/test/java/engine`), 1000 warm-up and 1000 measured frames per plane, only `Projector.project` is timed (no file reading, gray mapping or video). Planes: axis aligned `z=250` (499x499, 1189 FPS), along the slowest memory axis `y=250` (499x499, 1189 FPS), oblique 45 degrees (499x538, 1103 FPS). This is far above the required 30 FPS and the expected 100 FPS, so no further optimization was needed.
+
+What the video shows, frame by frame:
+
+1. A triangle plane in `z = 65`: a triangular cut of the head, centred in the frame.
+2. A rectangle (trapezoid with equal bases) in `z = 65`: the full slice of the head.
+3. The slice `y = 128`: a horizontal cut with the brain and the eyes.
+4. The slice `x = 128`: a front cut of the head.
+5. An **error frame**: a black frame with a white X. Line 6 of the CSV (`0,0,0, 0,10,0, 6,9,0`) is not an isosceles triangle (`dist(a,b) = 10.0`, `dist(a,c) = 10.82`). The plane throws `PlaneDefinitionException`, the demo catches it, prints the line number and the reason, and writes the error frame. The other planes are not affected.
+
+The images look like real head slices, so reading, projection, gray scaling and video writing work together.
 
 ## Class diagram
 
@@ -192,9 +213,10 @@ classDiagram
   class DemoRunner {
     +run(Path, Path, Path) int
   }
-  class PlaneCsvReader {
-    +read(Path) List~PlaneDefinition~$
+    class PlaneCsvReader {
+    +read(Path) List~PlaneEntry~$
   }
+  class PlaneEntry
   class GrayscaleMapper
   class VideoWriter {
     <<interface>>
@@ -211,15 +233,14 @@ classDiagram
   Projector ..> PlaneDefinition : reads
   Projector ..> ProjectionImage : writes
   TrianglePlane ..> Vec3 : uses
-  TrapezoidPlane ..> Vec3 : uses
-
+  PlaneCsvReader ..> PlaneEntry : creates
+  PlaneEntry ..> PlaneDefinition : holds
   Ex1 ..> DemoRunner : calls
   DemoRunner ..> NrrdReader : uses
   DemoRunner ..> PlaneCsvReader : uses
-  DemoRunner ..> Projector : uses
+   DemoRunner ..> Projector : uses
   DemoRunner ..> GrayscaleMapper : uses
   DemoRunner ..> VideoWriter : uses
-  PlaneCsvReader ..> PlaneDefinition : creates
 ```
 
 The exception classes (`NrrdFormatException`, `CsvFormatException`, `PlaneDefinitionException`) are left out of the diagram; see docs/DESIGN.md.
