@@ -13,7 +13,7 @@ This is Ex1 of the OOP course. The goal is a clean, robust and fast design. The 
 - [x] 5. Testing strategy, including the demo: SRS section 5
 - [x] 6. Implementation (commit frequently)
 - [x] 7. Demo `main`: `Ex1 file.nrrd file.csv file.mp4`
-- [ ] 8. Experiment and its results (see the Experiment section)
+- [x] 8. Experiment and its results (see the Experiment section)
 
 ## Problem
 
@@ -36,7 +36,7 @@ In scope:
 - Reading NRRD files: 3 dimensions, unsigned 8/16/32-bit, raw or gzip, little or big endian.
 - The projection engine for both plane types, with nearest-neighbour sampling.
 - The demo: NRRD + CSV in, MP4 out.
-- Unit tests, a reference test, a demo test and a benchmark.
+- Unit tests, a demo test and a benchmark.
 - Speed: at least 30 FPS (must) and 100+ FPS (expected) for the projection of a `500^3` byte volume.
 
 Not in scope (version 1):
@@ -213,9 +213,10 @@ classDiagram
   class DemoRunner {
     +run(Path, Path, Path) int
   }
-  class PlaneCsvReader {
-    +read(Path) List~PlaneDefinition~$
+    class PlaneCsvReader {
+    +read(Path) List~PlaneEntry~$
   }
+  class PlaneEntry
   class GrayscaleMapper
   class VideoWriter {
     <<interface>>
@@ -232,15 +233,14 @@ classDiagram
   Projector ..> PlaneDefinition : reads
   Projector ..> ProjectionImage : writes
   TrianglePlane ..> Vec3 : uses
-  TrapezoidPlane ..> Vec3 : uses
-
+  PlaneCsvReader ..> PlaneEntry : creates
+  PlaneEntry ..> PlaneDefinition : holds
   Ex1 ..> DemoRunner : calls
   DemoRunner ..> NrrdReader : uses
   DemoRunner ..> PlaneCsvReader : uses
-  DemoRunner ..> Projector : uses
+   DemoRunner ..> Projector : uses
   DemoRunner ..> GrayscaleMapper : uses
   DemoRunner ..> VideoWriter : uses
-  PlaneCsvReader ..> PlaneDefinition : creates
 ```
 
 The exception classes (`NrrdFormatException`, `CsvFormatException`, `PlaneDefinitionException`) are left out of the diagram; see docs/DESIGN.md.
