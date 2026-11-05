@@ -137,9 +137,9 @@ Short list; the full text is in SRS section 6.
 ## Testing
 
 - Unit tests for every class.
-- A reference test: the fast `Projector` is compared with a slow implementation written directly from the algorithm.
+- A benchmark (`ProjectorBenchmark`) for the FPS requirement. The simple `Projector`, written straight from the assignment, already meets it, so there is no separate fast version to compare against.
 - An end-to-end demo test with a small synthetic volume and a CSV file.
-- A separate benchmark for the FPS requirement.
+
 
 Details and the full test list are in SRS section 5.
 
@@ -150,7 +150,7 @@ We ran the demo on the real MRI file `data/MRHead.nrrd` (256 x 256 x 130, type s
 - Command used: `Ex1 data/MRHead.nrrd data/planes.csv results/demo.mp4`
 - Number of planes: 5 (4 valid, 1 invalid on purpose)
 - Output video: [results/demo.mp4](results/demo.mp4), 256 x 260, 10 frames per second, 5 frames
-- Measured FPS of the projection (with the machine used): *to be measured*
+- Measured FPS of the projection (with the machine used): 1100 to 1190 FPS (median) for the projection of a `500^3` byte volume, and about 630 to 660 FPS for the worst 1% of frames. Machine: Java 25, amd64, 8 cores, the engine uses one thread. Method: `ProjectorBenchmark` (`src/test/java/engine`), 1000 warm-up and 1000 measured frames per plane, only `Projector.project` is timed (no file reading, gray mapping or video). Planes: axis aligned `z=250` (499x499, 1189 FPS), along the slowest memory axis `y=250` (499x499, 1189 FPS), oblique 45 degrees (499x538, 1103 FPS). This is far above the required 30 FPS and the expected 100 FPS, so no further optimization was needed.
 
 What the video shows, frame by frame:
 
