@@ -1,6 +1,5 @@
 package io;
 
-import engine.PlaneDefinition;
 import engine.PlaneDefinitionException;
 import engine.TrapezoidPlane;
 import engine.TrianglePlane;
@@ -17,14 +16,16 @@ public final class PlaneCsvReader {
 
     private PlaneCsvReader() {}
 
-    public static List<PlaneDefinition> read(Path file) throws IOException {
+    public static List<PlaneEntry> read(Path file) throws IOException {
         List<String> lines = Files.readAllLines(file, StandardCharsets.UTF_8);
         return parse(lines);
     }
 
     // Separate from read() so it can be tested without a file.
-    static List<PlaneDefinition> parse(List<String> lines) throws CsvFormatException {
-        List<PlaneDefinition> planes = new ArrayList<>();
+    // A bad line does not stop the reading: it becomes an invalid entry.
+    // Only a file without any plane line is an error.
+    static List<PlaneEntry> parse(List<String> lines) throws CsvFormatException {
+        List<PlaneEntry> entries = new ArrayList<>();
         boolean sawContentLine = false;
 
         for (int i = 0; i < lines.size(); i++) {
@@ -54,30 +55,31 @@ public final class PlaneCsvReader {
             sawContentLine = true;
 
             if (!numeric) {
-                throw new CsvFormatException("Line " + lineNumber + ": a value is not a number");
+                entries.add(PlaneEntry.invalid(lineNumber, "a value is not a number"));
+                continue;
             }
 
             try {
                 if (values.length == 9) {
-                    planes.add(new TrianglePlane(
-                            point(values, 0), point(values, 3), point(values, 6)));
+                    entries.add(PlaneEntry.valid(lineNumber, new TrianglePlane(
+                            point(values, 0), point(values, 3), point(values, 6))));
                 } else if (values.length == 12) {
-                    planes.add(new TrapezoidPlane(
+                    entries.add(PlaneEntry.valid(lineNumber, new TrapezoidPlane(
                             point(values, 0), point(values, 3),
-                            point(values, 6), point(values, 9)));
+                            point(values, 6), point(values, 9))));
                 } else {
-                    throw new CsvFormatException("Line " + lineNumber
-                            + ": expected 9 or 12 numbers but found " + values.length);
+                    entries.add(PlaneEntry.invalid(lineNumber,
+                            "expected 9 or 12 numbers but found " + values.length));
                 }
             } catch (PlaneDefinitionException e) {
-                throw new CsvFormatException("Line " + lineNumber + ": " + e.getMessage());
+                entries.add(PlaneEntry.invalid(lineNumber, e.getMessage()));
             }
         }
 
-        if (planes.isEmpty()) {
+        if (entries.isEmpty()) {
             throw new CsvFormatException("The CSV file contains no planes");
         }
-        return planes;
+        return entries;
     }
 
     private static Vec3 point(double[] v, int start) {

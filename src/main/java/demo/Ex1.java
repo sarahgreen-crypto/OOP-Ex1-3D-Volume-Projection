@@ -14,6 +14,6 @@ public final class Ex1 {
 
          int exitCode = new DemoRunner().run(
                 Path.of(args[0]), Path.of(args[1]), Path.of(args[2]));
-        System.exit(exitCode);ד
+        System.exit(exitCode);
     }
 }
